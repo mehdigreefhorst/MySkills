@@ -1,0 +1,38 @@
+# Per-migration config for the `migrating-between-codebases` skill.
+# Lives in the CONSUMING repo (the one you port INTO) — never in the skill repo.
+# Put only scrub *patterns* here, never real secrets.
+
+source:
+  path: ../source-repo        # the tree you copy FROM — keep it checked out
+  ref: main                   # branch / sha the source units come from
+target:
+  path: .                     # the tree you port INTO (usually the current repo)
+
+# Identity rewrites applied to every copied file so it compiles in the target.
+# (e.g. a fork rename: project-fork -> project)
+rename:
+  - from: github.com/acme/project-fork
+    to:   github.com/acme/project
+  - from: project-fork        # package.json "name", import aliases, etc.
+    to:   project
+
+# Personal / sensitive data stripped from every copied file (regex or literal).
+scrub:
+  - "/home/[A-Za-z0-9_-]+"                       # linux home paths
+  - "/Users/[A-Za-z0-9_-]+"                      # macOS home paths
+  - "your-hostname"                              # station/host names
+  - "100\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"       # tailnet / CGNAT IPs
+  - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"  # emails
+
+# Run a real secret scanner over the staged copy before commit:
+#   gitleaks detect --no-git --source <staged>
+# (scrub handles known personal strings; the scanner catches tokens/keys.)
+
+# Never copy these.
+exclude:
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/.env*"
+  - "**/*.key"
+  - "**/*.pem"
