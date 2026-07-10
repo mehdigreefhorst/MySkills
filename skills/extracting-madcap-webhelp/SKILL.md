@@ -79,6 +79,8 @@ Frontmatter per topic: `url`, `title`, `breadcrumb` (` › `-joined), `breadcrum
 | Spaces/apostrophes in topic URLs | Percent-encode when fetching (`Menu's-i/`, `Werken met het Lint.htm`). |
 | Directory listing 403 | Normal — the host blocks listing while serving every file. Not a scrape blocker. |
 | Same letter, different meaning | `t:` = chunk offsets in `Search.js`, but titles in TOC chunks. Read each file's own shape. |
+| Broken authoring paths in `img src` | Published topics can reference the author's DISK layout (`../../../<project-folder>/...image002.gif`, backslash separators included) — resolves outside the help root, 404s live too. Detect (resolved path escapes `Content/`), replace with an "image unavailable" marker, report as a miss; never fetch. Also: URL-derived cache filenames can exceed the 255-byte filesystem limit — hash-bound them. |
+| Landing pages without `mc-main-content` | Edition start screens can be `<MadCap:bodyProxy/>` stubs. Fall back to `<body>` + boilerplate stripping instead of failing the topic. |
 
 ## Verification checklist
 
