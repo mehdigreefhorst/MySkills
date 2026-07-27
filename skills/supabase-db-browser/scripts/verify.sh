@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Verify a supabase-db-viewer deployment actually reads the target database.
+# Verify a supabase-db-browser deployment actually reads the target database.
 # "Container is up" is not evidence: Studio serves HTTP 200 with a broken
 # postgres-meta behind it. This asserts on real schema rows.
 #

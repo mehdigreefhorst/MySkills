@@ -1,10 +1,10 @@
 ---
-name: supabase-db-viewer
+name: supabase-db-browser
 description: Attach Supabase Studio's table editor to any existing Postgres database as a read/edit GUI, using only studio + postgres-meta (2 containers, ~350 MiB) instead of the full 13-container self-hosted stack. Use when someone wants to browse or edit a project's schema and rows without adopting Supabase.
 origin: local
 ---
 
-# Supabase Studio as a standalone Postgres viewer
+# Supabase Studio as a standalone Postgres browser
 
 Supabase's table editor does not talk to Postgres directly — it talks to
 **`postgres-meta`**, a REST API over the Postgres catalog. So the entire
@@ -15,7 +15,7 @@ Vector, Supavisor) exists to serve the *other* dashboard sections.
 | | Containers | Idle RAM |
 |---|---|---|
 | Full self-hosted stack | 13 | ~2,150 MiB |
-| **Viewer mode** | **2** | **~350 MiB** |
+| **Browser mode** | **2** | **~350 MiB** |
 
 Works against **vanilla Postgres**. No Supabase extensions, no `auth`/`storage`
 schemas, no superuser required — verified against a plain `postgres:16-alpine`.
@@ -61,9 +61,9 @@ docker compose up -d postgres          # add --profile <p> if it has one
 ### 4. Generate and start
 
 ```bash
-~/.claude/skills/supabase-db-viewer/scripts/setup.sh \
+~/.claude/skills/supabase-db-browser/scripts/setup.sh \
   --network myproj_default --db-host postgres --db-name mydb \
-  --db-user myuser --db-password "$PW" --port 8087 --dir ./db-viewer
+  --db-user myuser --db-password "$PW" --port 8087 --dir ./supabase-browser
 ```
 
 Accepts `--dsn postgresql://user:pass@host:port/db` instead of the discrete
@@ -74,7 +74,7 @@ a fresh `CRYPTO_KEY`, starts both containers and verifies.
 ### 5. Verify — do not trust "container is up"
 
 ```bash
-~/.claude/skills/supabase-db-viewer/scripts/verify.sh 8087
+~/.claude/skills/supabase-db-browser/scripts/verify.sh 8087
 ```
 
 Passing means Studio's own API returned real table rows from the target DB.
@@ -101,7 +101,7 @@ GET /api/platform/database/<ref>/pooling
   → {"db_port":6543,"pool_mode":"transaction","pgbouncer_enabled":true}
 ```
 
-There is no pooler in viewer mode. `/api/platform/organizations` likewise
+There is no pooler in browser mode. `/api/platform/organizations` likewise
 invents an org with `billing@supabase.co`. **Tell the user: trust Table Editor,
 SQL Editor and Database; treat Settings/Infrastructure as decoration.** A
 connection string copied from those pages points at a port that does not exist.
@@ -135,7 +135,7 @@ The project's own migrations table is already visible in the Table Editor.
   Mount migrations as a `:ro` *subfolder*, never as the root.
 - **Never use `${VAR:-{"json":[]}}` defaults.** Docker Compose < 2.20 mis-parses
   the braces and appends a stray `}`, producing invalid JSON. This silently
-  corrupts JWKS config in the full stack; viewer mode avoids brace defaults
+  corrupts JWKS config in the full stack; browser mode avoids brace defaults
   entirely. Check with `docker compose version`.
 - **In zsh, unquoted `$var` does not word-split.** `set -- $pair` and
   `cmd $args` behave differently than in bash — quote or use arrays.

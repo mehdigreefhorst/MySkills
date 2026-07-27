@@ -1,4 +1,4 @@
--- Read-only role for supabase-db-viewer.
+-- Read-only role for supabase-db-browser.
 --
 -- By default Studio connects as the database owner and can drop tables as
 -- easily as read them. If the point is *viewing*, point --db-user at this role
