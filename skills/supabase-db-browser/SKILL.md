@@ -106,6 +106,36 @@ invents an org with `billing@supabase.co`. **Tell the user: trust Table Editor,
 SQL Editor and Database; treat Settings/Infrastructure as decoration.** A
 connection string copied from those pages points at a port that does not exist.
 
+## Hiding the fabricated pages
+
+Studio reads `ENABLED_FEATURES_*` env vars at container start — one per flag,
+uppercased with non-alphanumerics replaced by `_` (`logs:all` →
+`ENABLED_FEATURES_LOGS_ALL`). `setup.sh` switches off 35 by default: billing,
+read replicas, replication, network restrictions, custom domains, log drains,
+database upgrades, project restart, add-ons, organisation and account settings,
+integrations, logs, reports, the auth sub-panels, storage analytics and vectors,
+and the edge-function examples. All 35 verified accepted against
+`supabase/studio:2026.07.07`, with `/api/enabled-features-overrides` echoing
+back exactly what was set.
+
+Pass `--show-all-features` to keep them visible.
+
+Two things to be honest about:
+
+- **No flag exists for the pooling/Connect panel** — the worst offender. It can
+  only be documented, not hidden. Same for Authentication, Storage, Realtime and
+  Edge Functions as whole sections: the flag list has sub-flags but no
+  `authentication:all` or `storage:all`, so those sections still appear and
+  still fail. They fail *loudly*, which is the acceptable case.
+- **Flags hide features; they do not grey them out with an explanation.**
+  Anything more means patching Studio's minified Next.js bundle, which breaks on
+  every image bump. Not worth it.
+
+Studio validates these vars and logs unknown ones (`does not match any known
+feature; ignoring`), so a flag renamed upstream is noisy rather than silent. If
+an image bump produces that warning, re-derive the list from
+`packages/common/enabled-features/enabled-features.json` (~101 flags).
+
 ## Showing a project's migration files
 
 Studio's snippets folder is just a directory of `.sql` files that it `readdir`s,

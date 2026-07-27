@@ -11,7 +11,55 @@ META_IMAGE_DEFAULT="supabase/postgres-meta:v0.96.6"
 
 DB_HOST=""; DB_PORT="5432"; DB_NAME=""; DB_USER=""; DB_PASSWORD=""
 NETWORK=""; PORT="8087"; DIR="./supabase-browser"; MIGRATIONS=""; SCHEMAS="public"
-PROJECT_LABEL=""; ORG_LABEL="Local"; NAME=""
+PROJECT_LABEL=""; ORG_LABEL="Local"; NAME=""; HIDE_BROKEN=true
+
+# Studio feature flags to switch off in browser mode. Every one of these gates a
+# page that is either fabricated (the platform routes return hardcoded stubs
+# with no backing service) or dead (its container is not running here).
+#
+# Studio validates these at startup and logs any it does not recognise, so a
+# stale entry after an image bump is noisy rather than silent.
+#
+# NOTE: there is deliberately no entry for the pooling/Connect panel. No flag
+# exists for it, and it is the worst offender - it reports pgbouncer enabled on
+# port 6543 with no pooler running. It has to stay documented, not hidden.
+HIDDEN_FEATURES="
+billing:all
+infrastructure:read_replicas
+database:replication
+database:network_restrictions
+database:restore_to_new_project
+project_settings:custom_domains
+project_settings:database_upgrades
+project_settings:log_drains
+project_settings:restart_project
+project_addons:dedicated_ipv4_address
+project_addons:show_compute_price
+project_homepage:show_instance_size
+project_creation:show_advanced_config
+organization:show_legal_documents
+organization:show_security_settings
+organization:show_sso_settings
+account:show_security_settings
+integrations:vercel
+integrations:partners
+integrations:aws_private_link
+logs:all
+logs:collections
+reports:all
+authentication:third_party_auth
+authentication:rate_limits
+authentication:attack_protection
+authentication:multi_factor
+authentication:performance
+authentication:emails
+authentication:show_providers
+authentication:sign_in_providers
+storage:analytics
+storage:vectors
+edge_functions:show_stripe_example
+edge_functions:show_all_edge_function_invocation_examples
+"
 STUDIO_IMAGE="$STUDIO_IMAGE_DEFAULT"; META_IMAGE="$META_IMAGE_DEFAULT"
 
 die() { printf '\nerror: %s\n' "$*" >&2; exit 1; }
@@ -36,6 +84,8 @@ Options:
                       running browser (default: db-browser-<dbname>)
   --project NAME      label shown in Studio (default: database name)
   --org NAME          organisation label shown in Studio (default: Local)
+  --show-all-features keep Studio's fabricated/dead pages visible (default is to
+                      hide them via ENABLED_FEATURES_* flags)
   --studio-image REF  override Studio image
   --meta-image REF    override postgres-meta image
 USAGE
@@ -71,6 +121,7 @@ while [ $# -gt 0 ]; do
     --name) NAME="$2"; shift 2 ;;
     --project) PROJECT_LABEL="$2"; shift 2 ;;
     --org) ORG_LABEL="$2"; shift 2 ;;
+    --show-all-features) HIDE_BROKEN=false; shift ;;
     --studio-image) STUDIO_IMAGE="$2"; shift 2 ;;
     --meta-image) META_IMAGE="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -213,8 +264,18 @@ cat <<EOF
       # No gateway here; auth/storage/realtime/functions are expected to fail.
       SUPABASE_URL: http://localhost:9999
       SUPABASE_PUBLIC_URL: http://localhost:\${STUDIO_PORT}
-      ENABLED_FEATURES_LOGS_ALL: "false"
       SNIPPETS_MANAGEMENT_FOLDER: /app/snippets
+EOF
+if [ "$HIDE_BROKEN" = true ]; then
+  printf '      # Pages that are fabricated or dead without their backing service.\n'
+  printf '      # Disable with --show-all-features. No flag exists for the pooling\n'
+  printf '      # panel, which is why it stays in the docs instead.\n'
+  for f in $HIDDEN_FEATURES; do
+    var="ENABLED_FEATURES_$(printf '%s' "$f" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Z0-9' '_')"
+    printf '      %s: "false"\n' "${var%_}"
+  done
+fi
+cat <<EOF
     volumes:
       - ./snippets:/app/snippets
 EOF
